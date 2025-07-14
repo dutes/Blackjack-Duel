@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackjack Duel Demo – Sequential Result Flow</title>
+<style>
+  /* Okay, we're doing green because casino vibes. Keeping it simple. */
+  body {
+    font-family: Arial, sans-serif;
+    background: #0B6623;
+    color: white;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    height: 100vh; /* idk man it fills the screen */
+  }
+
+  /* Game on the left, logs on the right. Classic two-column layout */
+  .game-container {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  /* Big black log area for the action log so it looks important */
+  .log-container {
+    flex: 1;
+    background: #1C1C1C;
+    overflow-y: auto;
+    padding: 15px;
+    font-size: 14px;
+  }
+
+  /* Hands are grouped horizontally until they wrap because CSS hates me */
+  .hands {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  /* Card containers, each hand goes into one of these little boxes */
+  .hand {
+    background: #228B22;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    padding: 10px;
+    width: 220px;
+  }
+
+  .cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Card images themselves, I mean you know what images are */
+  img {
+    width: 70px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    display: block; /* fix spacing jank */
+  }
+
+  /* This is the highlight box for redraw, don't @ me if you can't see it */
+  .highlight-redraw {
+    display: inline-block;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+  }
+
+  /* Yellow highlight when you're hovering over a card you can redraw */
+  .highlight-redraw:hover {
+    background-color: rgba(255, 255, 0, 0.5);
+  }
+
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+
+  /* Big fat result text */
+  .result {
+    font-size: 24px;
+    margin-top: 20px;
+  }
+
+  /* Color coding the results because visuals are everything */
+  .win { color: lime; }
+  .loss { color: red; }
+  .push { color: orange; }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <h1>Blackjack Duel (3 Hands)</h1>
+  <button id="dealBtn">Start New Round</button>
+  <div id="status"></div>
+  <div id="aiArea" class="hands"></div>
+  <div id="playerArea" class="hands"></div>
+  <div id="result" class="result"></div>
+</div>
+
+<div class="log-container" id="logArea">
+  <h3>Action Log</h3>
+</div>
+
+<script>
+
+const suits = ['S', 'H', 'D', 'C']; 
+const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']; 
+
+// Pick a random card
+function randomCard() {
+  return { value: values[Math.floor(Math.random()*values.length)], suit: suits[Math.floor(Math.random()*suits.length)] };
+}
+
+// Figure out what a card is worth
+function cardValue(card) {
+  if (['J','Q','K'].includes(card.value)) return 10;
+  if (card.value==='A') return 11; // until it inevitably ruins your hand
+  return parseInt(card.value);
+}
+
+// Sum up the cards in a hand.
+function handTotal(hand) {
+  let total = hand.reduce((sum, c) => sum + cardValue(c), 0);
+  let aces = hand.filter(c => c.value==='A').length;
+  // downgrade aces if they’re causing bust, blackjack math be like that
+  while (total>21 && aces>0) { total-=10; aces--; }
+  return total;
+}
+
+// API call to get the image URL for a card
+function getCardImage(card) {
+  const code = (card.value==='10' ? '0' : card.value[0]) + card.suit;
+  return `https://deckofcardsapi.com/static/img/${code}.png`;
+}
+
+// Global game state vars
+let phase = 0, playerHands = [], aiHands = [], currentHand = 0, redrawUsed = false, handResults = [];
+
+// fire log messages to area
+function logAction(text) {
+  const logArea = document.getElementById('logArea');
+  logArea.innerHTML += `<div>${text}</div>`;
+  logArea.scrollTop = logArea.scrollHeight;
+}
+
+// Reset game state
+function resetGame() {
+  phase = 1;
+  redrawUsed = false;
+  currentHand = 0;
+  handResults = [];
+  document.getElementById('result').innerText = "";
+  document.getElementById('logArea').innerHTML = "<h3>Action Log</h3>";
+  playerHands = Array.from({length: 3}, () => [randomCard(), randomCard()]);
+  aiHands = Array.from({length: 3}, () => [randomCard(), randomCard()]);
+  logAction("Deal Phase: Cards dealt.");
+  render();
+  setTimeout(() => askRedraw(), 200);
+}
+
+// redraw prompt after dealing
+function askRedraw() {
+  if (confirm("Do you want to redraw a card?")) {
+    logAction("Player: chooses to redraw.");
+    phase = 2;
+    render();
+  } else {
+    logAction("Player: skips redraw.");
+    phase = 3;
+    render();
+  }
+}
+
+// Redraw a card from a specific hand
+function redraw(handIdx, cardIdx) {
+  if (redrawUsed || phase !== 2) return;
+  playerHands[handIdx][cardIdx] = randomCard();
+  logAction(`Player redraws from Hand ${String.fromCharCode(65+handIdx)}.`);
+  redrawUsed = true;
+  phase = 3;
+  render();
+}
+
+// Hit function for player, adds a card to the current hand
+function hit() {
+  playerHands[currentHand].push(randomCard());
+  logAction(`Player hits on Hand ${String.fromCharCode(65+currentHand)}.`);
+  if (handTotal(playerHands[currentHand]) >= 21) stand();
+  else render();
+}
+
+// Stand function for player, resolves the current hand
+function stand() {
+  logAction(`Player finishes Hand ${String.fromCharCode(65+currentHand)}.`);
+  resolveCurrentHand();
+}
+
+// Ai - big on the A low on the i
+function resolveCurrentHand() {
+  const i = currentHand;
+  while (handTotal(aiHands[i]) < 17) {
+    aiHands[i].push(randomCard());
+    logAction(`AI hits on Hand ${String.fromCharCode(65+i)}.`);
+  }
+  logAction(`AI finishes Hand ${String.fromCharCode(65+i)}.`);
+
+  const p = handTotal(playerHands[i]), a = handTotal(aiHands[i]);
+  if (p <= 21 && (a > 21 || p > a)) {
+    handResults[i] = { result: 'WIN', class: 'win' };
+    logAction(`Result Hand ${String.fromCharCode(65+i)}: WIN.`);
+  } else if (a <= 21 && (p > 21 || a > p)) {
+    handResults[i] = { result: 'LOSS', class: 'loss' };
+    logAction(`Result Hand ${String.fromCharCode(65+i)}: LOSS.`);
+  } else {
+    handResults[i] = { result: 'PUSH', class: 'push' };
+    logAction(`Result Hand ${String.fromCharCode(65+i)}: PUSH.`);
+  }
+
+  currentHand++;
+  if (currentHand >= 3) showFinalResult();
+  else render();
+}
+
+// game end and round result
+function showFinalResult() {
+  phase = 4;
+  let score = handResults.reduce((sum, hr) => sum + (hr.result === 'WIN' ? 1 : hr.result === 'LOSS' ? -1 : 0), 0);
+  let result = score > 0 ? 'You Win!' : score < 0 ? 'AI Wins!' : 'Tie!';
+  document.getElementById('result').innerText = result;
+  logAction(`Overall Result: ${result}`);
+  alert(`Round Over! ${result}`);
+  render();
+}
+
+// this made sense in my head at the time
+function render() {
+  document.getElementById('status').innerText = `Phase ${phase}`;
+  document.getElementById('playerArea').innerHTML = '';
+  document.getElementById('aiArea').innerHTML = '';
+
+  for (let i = 0; i < 3; i++) {
+    let handTitle;
+    if (handResults[i]) {
+      handTitle = `Hand ${String.fromCharCode(65+i)}: <span class='${handResults[i].class}'>${handResults[i].result}</span>`;
+    } else {
+      handTitle = `Your Hand ${String.fromCharCode(65+i)}`;
+    }
+
+    const pDiv = document.createElement('div');
+    pDiv.className = 'hand';
+
+    const title = document.createElement('h3');
+    title.innerHTML = handTitle;
+    pDiv.appendChild(title);
+
+    const cardsDiv = document.createElement('div');
+    cardsDiv.className = 'cards';
+    playerHands[i].forEach((c, idx) => {
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('highlight-redraw');
+      wrapper.style.borderRadius = '8px';
+      wrapper.style.display = 'inline-block';
+
+      const img = document.createElement('img');
+      img.src = getCardImage(c);
+      img.style.display = 'block';
+
+      if (phase === 2 && !redrawUsed) {
+        wrapper.onclick = () => redraw(i, idx);
+      }
+
+      wrapper.appendChild(img);
+      cardsDiv.appendChild(wrapper);
+    });
+    pDiv.appendChild(cardsDiv);
+
+    if (phase === 3 && i === currentHand) {
+      const hitBtn = document.createElement('button');
+      hitBtn.textContent = 'Hit';
+      hitBtn.onclick = hit;
+      pDiv.appendChild(hitBtn);
+
+      const standBtn = document.createElement('button');
+      standBtn.textContent = 'Stand';
+      standBtn.onclick = stand;
+      pDiv.appendChild(standBtn);
+    }
+
+    if (handResults[i] || (phase === 3 && i === currentHand)) {
+      const totalDiv = document.createElement('div');
+      totalDiv.textContent = `Total: ${handTotal(playerHands[i])}`;
+      pDiv.appendChild(totalDiv);
+    }
+
+    document.getElementById('playerArea').appendChild(pDiv);
+
+    const aDiv = document.createElement('div');
+    aDiv.className = 'hand';
+    aDiv.innerHTML = `<h3>Opponent Hand ${String.fromCharCode(65+i)}</h3><div class='cards'>`;
+    if (phase < 4 && !handResults[i]) {
+      aDiv.innerHTML += `<img src="https://deckofcardsapi.com/static/img/back.png"><img src="https://deckofcardsapi.com/static/img/back.png">`;
+    } else {
+      aiHands[i].forEach(c => aDiv.innerHTML += `<img src="${getCardImage(c)}">`);
+      aDiv.innerHTML += `</div><div>Total: ${handTotal(aiHands[i])}</div>`;
+    }
+    aDiv.innerHTML += "</div>";
+    document.getElementById('aiArea').appendChild(aDiv);
+  }
+
+  document.getElementById('dealBtn').style.display = phase === 0 ? 'block' : 'none';
+}
+
+document.getElementById('dealBtn').onclick = resetGame;
+render();
+</script>
+
+</body>
+</html>
