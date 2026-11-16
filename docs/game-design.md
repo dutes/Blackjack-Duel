@@ -59,6 +59,7 @@ A head-to-head PvP game built on familiar Blackjack rules: a tense, fast three-h
 
 **Phase 4: rule experiments.**
 - Allow Redraw and Double on the same hand. A clear candidate for an A/B test.
+- Let Double lock a hand as it stands, with no extra card. The opponent is told which hand was Doubled, so Doubling a weak hand becomes a bluff that pushes them to chase 21. The risk: Doubling a dealt 19 or 20 becomes close to free points. Test it against the standard one-card Double.
 - A per-player time bank instead of fixed turn timers, to add strategic pressure.
 
 **Beyond:** the duel framework works for other games. Baccarat and Hi-Lo could run in the same 1v1 format.
