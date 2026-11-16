@@ -54,16 +54,16 @@ The code is the smallest part of this. The design and discovery docs show how I'
 | [Game design](docs/game-design.md) | Concept, audience, experience pillars, full ruleset, a four-phase roadmap and wireframes |
 | [MVP user stories](docs/user-stories.md) | Stories and acceptance criteria for the Phase 1 build, including timers, disconnections and server authority |
 | [Validation plan](docs/validation-plan.md) | Three testable hypotheses, the data queries that would test them, and a targeted player survey mapped to each one |
-| [Duel test findings](duel/TESTING.md) | Server tests that play real matches with two clients, check every score against an independent implementation of the rules, and found fourteen issues, nine now fixed, including one that let any player crash the server |
+| [Duel test findings](duel/TESTING.md) | Server tests that play real matches with two clients, check every score against an independent implementation of the rules, and found fourteen issues, ten now fixed, including one that let any player crash the server |
 | [King of the Hill test findings](king-of-the-hill/TESTING.md) | A risk-based test suite traced to the spec, and the four bugs it found, including one that stops the tournament |
 
 ## What I haven't proven yet
 
-The prototypes prove the game works on screen. They don't yet include the **hidden bust**, the mechanic the whole design leans on: in both demos, a bust is shown straight away. That's the next thing to build, because until it's in front of players I can't say whether the bluffing works.
+The duel now has the **hidden bust**, the mechanic the whole design leans on: a bust stays secret until the reveal, and you can keep hitting to bluff. What I can't say yet is whether the bluffing works on real players. That needs playtests, not more code.
 
 They also don't prove there's a market. I haven't run the validation plan, because it needs an operator's player data to answer the questions that matter: whether heavy Blackjack players already cross over into poker, and whether they bounce out of Blackjack sessions early.
 
-So there are two next steps, in this order: build the hidden bust so the core idea can be playtested properly, then find the evidence that the audience exists. I wouldn't build anything bigger before both.
+So there are two next steps, in this order: playtest the hidden bust with real players, then find the evidence that the audience exists. I wouldn't build anything bigger before both.
 
 ## Repository layout
 

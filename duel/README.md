@@ -10,11 +10,13 @@ The MVP of Blackjack Duel: two players head-to-head over the network.
 - **A guided tutorial** against a bot, with a scripted deal that walks through every rule.
 - **A timed Strategy Phase** to use Redraw and Double before play starts.
 - **Three hands played in turn**, scored 1 point each or 2 if Doubled, with **Sudden Death** on a tie.
+- **The hidden bust:** go over 21 and your opponent isn't told. Your turn carries on, so you can keep hitting to bluff, and the bust only shows when the hand is revealed.
+- **The reveal:** once both players are done, the two hands slide to the middle of the lane, the opponent's cards flip, and each hand is stamped WIN, LOSS, PUSH or BUST.
 - **Server authority:** the server shuffles, deals and scores. Each player only ever receives their own cards; the opponent's stay masked until the reveal.
 
-## Not built yet
+## The interface
 
-The **hidden bust**. When a player busts, the server ends their turn and tells the opponent. In the design, a bust stays secret and the player can keep hitting as a bluff until they stand. It's the mechanic the whole game leans on, so it's next.
+One layout for every screen. Each hand has a lane, with your opponent's cards at the top and yours at the bottom. On a desktop the lanes sit on an oval casino table. On a phone they stand side by side in portrait, with every button in the bottom third of the screen, so the whole game can be played with one thumb.
 
 ## Testing
 

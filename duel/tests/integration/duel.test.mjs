@@ -292,7 +292,7 @@ describe('Scoring', () => {
 });
 
 describe('Hidden bust', () => {
-  test('DUEL-006 / GDD-Hidden Bust / US-1.4: a bust is kept from the opponent and the player can keep hitting', { ...T, todo: 'DUEL-006' }, async () => {
+  test('DUEL-006 / GDD-Hidden Bust / US-1.4: a bust is kept from the opponent and the player can keep hitting', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -305,6 +305,18 @@ describe('Hidden bust', () => {
       match.p2.received.some((r) => r.event === 'cue' && /bust/i.test(r.payload.text));
     assert.equal(told, false, 'the opponent was told about the bust');
     assert.equal(match.p1.state.myFinished[key], false, 'the busted player\'s turn was ended for them');
+
+    // The busted player can keep hitting as a bluff.
+    const before = match.p1.state.myHands[key].length;
+    match.p1.emit('hit', { roomId: match.roomId });
+    await waitFor(match.p1, 'state', (s) => s.myHands[key].length > before);
+
+    // The opponent sees only face-down cards until the hand resolves, then the bust is revealed.
+    assert.ok(match.p2.state.oppHands[key].every((c) => c.r === '?'), 'the opponent could see the busted cards');
+    const result = waitFor(match.p2, 'hand_result', (r) => r.handKey === key);
+    match.p1.emit('stand', { roomId: match.roomId });
+    match.p2.emit('stand', { roomId: match.roomId });
+    assert.equal((await result).outcome, 'win', 'the bust did not lose the hand at the reveal');
   });
 });
 
@@ -388,9 +400,11 @@ describe('Sudden Death', () => {
   test('DUEL-008 / GDD-Sudden Death: a tied Sudden Death hand is replayed until there is a winner', T, async () => {
     const match = await reachSuddenDeath();
     await toPlay(match);
-    // Both players bust, which ties the hand.
+    // Both players bust and stand (a bust no longer ends the turn), which ties the hand.
     await hitUntilBust(match.p1, match.roomId, (s) => s.myHands.A);
     await hitUntilBust(match.p2, match.roomId, (s) => s.myHands.A);
+    match.p1.emit('stand', { roomId: match.roomId });
+    match.p2.emit('stand', { roomId: match.roomId });
     await waitFor(match.p1, 'state', (s) => s.tiePending, { includePast: true });
     // Reaching here proves the tie was detected; the gap is what happens next.
 

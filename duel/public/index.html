@@ -1,136 +1,74 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
-  <title>Blackjack Duel – Multiplayer Tech Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blackjack Duel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0D0B" />
+  <meta name="description" content="Head-to-head blackjack with a hidden bust. Best of three hands." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,700&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <div class="game-container">
-    <header>
-      <h1>Blackjack Duel</h1>
-      <div id="status" class="status-msg"></div>
+  <div class="app">
+    <header class="topbar">
+      <span class="brand">Blackjack Duel</span>
+      <div class="scoreline hidden" id="scoreline" aria-live="polite">
+        <span class="lbl">OPP</span><span class="score" id="scoreText">0 – 0</span><span class="lbl">YOU</span>
+      </div>
+      <div class="phase hidden" id="phaseBox">
+        <span class="phase-text" id="phaseText"></span>
+        <div class="timer" id="timer"><div class="timer-fill" id="timerFill"></div></div>
+        <span class="timer-text" id="timerText"></span>
+      </div>
     </header>
 
-    <section id="pregame" class="panel landing-panel">
-      <div id="landingContent">
-        <p class="intro-text">This is a head-to-head game. To start, open a second tab or share an invite link.</p>
-        <div class="landing-actions">
-          <button id="startSessionBtn" class="primary big-btn">Start Session</button>
-          <button id="startTutorialBtnMain" class="secondary big-btn">Play Tutorial</button>
-          <div class="secondary-actions">
-            <button id="openTabBtn" class="ghost">Open Second Tab</button>
-            <button id="copyLinkBtn" class="ghost">Copy Invite Link</button>
-          </div>
+    <section id="lobby" class="lobby">
+      <div class="lobby-card" id="lobbyMain">
+        <h1>Blackjack Duel</h1>
+        <p class="tagline">Head-to-head blackjack with a hidden bust. Three hands, best score wins.</p>
+        <div class="lobby-actions">
+          <button id="friendBtn" class="btn gold big">Play a friend</button>
+          <button id="botBtn" class="btn light big">Play the bot</button>
+          <button id="tutorialBtn" class="btn outline big">Learn with the tutorial</button>
         </div>
+        <button id="rulesBtn" class="linklike">How to play</button>
       </div>
-
-      <div id="waitingState" class="hidden">
-        <div class="spinner"></div>
-        <p class="status-text">Waiting for opponent...</p>
-        <div class="invite-box">
-          <input type="text" id="shareLinkInput" readonly value="" aria-label="Invite Link" />
-          <button id="copyLinkBtnWait" class="icon-btn" title="Copy Link">📋</button>
+      <div class="lobby-card hidden" id="lobbyWaiting">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="waiting-text" id="waitingText">Waiting for your opponent…</p>
+        <div class="invite hidden" id="inviteBox">
+          <label for="inviteInput">Send this link to a friend</label>
+          <div class="invite-row">
+            <input id="inviteInput" type="text" readonly />
+            <button id="copyBtn" class="btn gold small">Copy</button>
+          </div>
+          <button id="openTabBtn" class="linklike">Or open a second tab to play yourself</button>
         </div>
-        <button id="cancelSessionBtn" class="ghost small">Cancel</button>
+        <button id="cancelBtn" class="linklike">Cancel</button>
       </div>
     </section>
 
-    <!-- Modals -->
-    <div id="tutorialModal" class="modal hidden">
-      <div class="modal-content tutorial-welcome">
-        <h2>Welcome to Blackjack Duel</h2>
-        <div class="tutorial-text">
-          <p>This is a guided tutorial that will walk you through a single round of Blackjack Duel, a head-to-head
-            Blackjack game.</p>
-          <p>The rules are simple: scoring is the same as normal blackjack, best of three hands. The new element is the
-            <strong>hidden bust</strong>.
-          </p>
-          <p>You will not know if your opponent has busted. You need to get the hand total closest to 21 before
-            standing. Closest hand wins the game point.</p>
-
-          <h3>Scoring</h3>
-          <ul>
-            <li><strong>Win:</strong> 1 point</li>
-            <li><strong>Push:</strong> 0 points</li>
-            <li><strong>Loss:</strong> 0 points</li>
-          </ul>
-
-          <p>Player with highest score after 3 hands wins the round.</p>
-          <p>There are some extra elements that the tutorial will walk you through.</p>
-        </div>
-        <div class="modal-actions">
-          <button id="startTutorialBtn" class="primary big-btn">Start Tutorial</button>
+    <main id="game" class="game hidden">
+      <div class="rail">
+        <div class="felt" id="felt">
+          <div class="lanes" id="lanes"></div>
+          <div class="felt-overlay hidden" id="feltOverlay" aria-live="assertive"></div>
         </div>
       </div>
-    </div>
-
-    <div id="botModal" class="modal hidden">
-      <div class="modal-content">
-        <h2>Nice work!</h2>
-        <p>Want a warm-up match vs a bot?</p>
-        <div class="modal-actions">
-          <button id="playBotBtn" class="primary">Play Bot (Easy)</button>
-          <button id="playHumanBtn" class="ghost">Wait for Human</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="tutorialSuccessModal" class="modal hidden">
-      <div class="modal-content tutorial-welcome">
-        <h2>Well Done!</h2>
-        <p>You've mastered the basics and won the round.</p>
-        <p class="subtext">You are now ready for the real thing.</p>
-        <div class="modal-actions">
-          <button id="finishTutorialBtn" class="primary big-btn">Return to Menu</button>
-        </div>
-      </div>
-    </div>
-
-
-    <section id="table" class="hidden">
-      <div id="phase" class="phase"></div>
-
-      <div id="redrawBar" class="redraw panel">
-        <div class="redraw-header">
-          <div class="redraw-copy">
-            <span class="label">Strategy phase</span>
-            <p class="helper">Make your moves: redraw one card and/or double a different hand. When you're ready to
-              commit, lock in your plan.</p>
-          </div>
-          <div class="redraw-action">
-            <button id="skipBtn" class="ghost lock-btn">Lock Strategy</button>
-            <span id="redrawStatus" class="note">Use redraw, double, or lock strategy when ready.</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="aiArea" class="hands"></div>
-      <div id="opponentCue" class="cue hidden"></div>
-      <div id="playerArea" class="hands"></div>
-
-      <div id="results" class="results hidden"></div>
-
-      <footer class="footer">
-        <button id="newMatchBtn" class="ghost">New Match</button>
-      </footer>
-    </section>
+      <section class="controls" id="controls" aria-label="Your move"></section>
+    </main>
   </div>
 
-  <aside class="log-container" id="logArea">
-    <h3>Action Log</h3>
-  </aside>
+  <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="popover hidden" id="popover" role="note"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
-
 </html>

@@ -2,7 +2,7 @@
 
 The duel is the MVP, so I tested it against the MVP user stories, story by story. It's also a networked game where the server holds the cards, so I tested it the way a cheating client would approach it as well as a fair one.
 
-Testing found fourteen issues. The worst let any player crash the server or give themselves an extra card; both are fixed. The most important one still open is the game's defining mechanic, the hidden bust, which isn't built yet.
+Testing found fourteen issues. The worst let any player crash the server or give themselves an extra card; both are fixed. So is the most important gap it found: the game's defining mechanic, the hidden bust, wasn't built. It is now.
 
 ## How the tests work
 
@@ -18,9 +18,9 @@ Testing found fourteen issues. The worst let any player crash the server or give
 
 ## Results
 
-**30 tests: 27 pass, 3 open.** The suite takes about 30 seconds.
+**30 tests: 28 pass, 2 open.** The suite takes about 30 seconds.
 
-Nine of the fourteen issues are fixed, two were settled as product decisions, and three are still open. A fixed bug keeps its test, so it can't quietly come back. An open one is written as a `{ todo: 'DUEL-...' }` test: it describes what the story asks for, runs on every build and is reported as TODO, so the build stays green while the gap stays visible. I checked each open test fails for the reason it states, not because of a timeout or a test mistake.
+Ten of the fourteen issues are fixed, two were settled as product decisions, and two are still open. A fixed bug keeps its test, so it can't quietly come back. An open one is written as a `{ todo: 'DUEL-...' }` test: it describes what the story asks for, runs on every build and is reported as TODO, so the build stays green while the gap stays visible. I checked each open test fails for the reason it states, not because of a timeout or a test mistake.
 
 ## What works
 
@@ -29,6 +29,7 @@ Nine of the fourteen issues are fixed, two were settled as product decisions, an
 - **Redraw and Double:** Redraw replaces exactly the chosen card and works once; Double works once, and the opponent is told which hand. They can't be combined on one hand, and a Natural can't be Doubled.
 - **Scoring:** correct on every hand across twelve matches, including Doubled hands (one extra card, 2 points) and Naturals (an automatic win, revealed to the opponent).
 - **Sudden Death:** a tie after three hands deals each player a fresh hand with Double off and Redraw on. A Natural wins it outright, and a tied hand is replayed.
+- **The hidden bust:** a player who goes over 21 keeps their turn and can keep hitting; the opponent isn't told and sees only face-down cards until the reveal.
 - **Disconnections:** the remaining player is told straight away.
 
 ## Findings
@@ -48,6 +49,7 @@ Severity is about the player: what breaks, and for whom.
 | DUEL-014 | Medium | Double worked on a hand that had been Redrawn. The page blocked it, but the server didn't. | The server refuses it. |
 | DUEL-005 | Low | Doubling a Natural did nothing except use up the player's Double. | The server refuses it and the Double stays available. |
 | DUEL-011 | Medium | In Sudden Death the bot drew two cards every time it hit. Found by reading the code. | The bot draws through the same path as a player. |
+| DUEL-006 | High | The hidden bust wasn't built. A bust ended the player's turn and the opponent was told. | A bust is kept secret: the player's turn carries on, they can keep hitting to bluff, and the opponent sees only face-down cards until the hand is revealed. The test checks all three, and that the bust still loses at the reveal. |
 
 ### Settled as decisions
 
@@ -59,8 +61,6 @@ Severity is about the player: what breaks, and for whom.
 Both are pinned by `DECISION-` tests, alongside a third: **a Natural dealt in Sudden Death wins outright**, and two Naturals are a draw that's replayed. The decisions are recorded in [the user stories](../docs/user-stories.md#changes-after-testing-november-2026) and [the ruleset](../docs/game-design.md#ruleset-phase-1).
 
 ### Still open
-
-**DUEL-006 · High · The hidden bust isn't built.** When a player busts, the server ends their turn and tells the opponent. In the design, the bust stays secret and the player can keep hitting as a bluff until they stand. This is the mechanic that makes Blackjack Duel different, so it's next. *Stories: US-1.4, GDD hidden bust.*
 
 **DUEL-010 · High · A player can stall a match forever.** There's no timer on a hand in play, so a player who never hits or stands holds their opponent indefinitely. The story asks for a 30-second timer that auto-stands. *Stories: US-1.4, US-1.6.*
 

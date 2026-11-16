@@ -65,6 +65,8 @@ function isNatural(cards = []) {
   const hasTenValue = ranks.some((r) => ["10", "J", "Q", "K"].includes(r));
   return hasAce && hasTenValue && handScore(cards) === 21;
 }
+const REVEAL_HOLD_MS = 4500; // the client reveal runs about 3.5 seconds
+const MAX_HAND_CARDS = 11; // no 21-or-under hand needs more; stops endless bluff hitting
 const mask = (arr) => Array(arr.length).fill({ r: "?", s: "?" });
 
 /* ---------- Match registry ---------- */
@@ -97,7 +99,7 @@ room = {
 }
 ----------------------------------- */
 
-function createRoom(p1, p2) {
+function createRoom(p1, p2, { scripted = false } = {}) {
   const id = rid();
   const deck = makeDeck();
 
@@ -137,7 +139,8 @@ function createRoom(p1, p2) {
   };
 
   rooms.set(id, state);
-  handleNaturals(state);
+  // A scripted deal (the tutorial) replaces these hands, so don't score or announce them.
+  if (!scripted) handleNaturals(state);
   // startStrategyTimer(state); // Deferred until briefing done
   return state;
 }
@@ -186,6 +189,12 @@ function sanitizeFor(room, pid) {
     myNatural: room.natural[pid],
     oppNatural: room.natural[opp],
     handOutcomes: room.handOutcomes,
+    // The same outcomes from this player's side: win | lose | push.
+    myOutcomes: Object.fromEntries(Object.entries(room.handOutcomes).map(([k, r]) => [
+      k, !r ? null : r === "tie" ? "push" : r === (room.players[0] === pid ? "p1" : "p2") ? "win" : "lose",
+    ])),
+    myDoubled: room.doubled[pid],
+    oppDoubled: room.doubled[opp],
     doubleTarget: room.doubleTarget[pid],
     redrawTarget: room.redrawTarget[pid],
     tiePending: room.tiePending,
@@ -607,7 +616,7 @@ io.on("connection", (socket) => {
     // Create a room with a "Bot" but strictly scripted
     const roomId = rid();
     const botId = "BOT_TUTORIAL";
-    const room = createRoom(socket.id, botId);
+    const room = createRoom(socket.id, botId, { scripted: true });
     room.isTutorial = true;
 
     // Override deck with deterministic tutorial deck
@@ -954,11 +963,7 @@ function startBotLoop(room, botId) {
           hand.push(room.deck.pop());
           const oppId = other(room, botId);
           io.to(oppId).emit("cue", { text: `Opponent HIT on Hand ${k}.` });
-
-          if (handScore(hand) > 21) {
-            room.finished[botId][k] = true;
-            io.to(oppId).emit("cue", { text: `Opponent busted on Hand ${k}.` });
-          }
+          // A bust stays hidden: the bot stands on its next decision, like a bluffing player.
           broadcast(room);
         } else {
           // Stand
@@ -997,18 +1002,14 @@ function socket_emit_hit_logic(room, socketId, handKey) {
   const hand = pack[socketId][handKey];
   const oppId = other(room, socketId);
 
-  if (handScore(hand) > 21) return; // already bust
+  // Hidden bust: going over 21 doesn't end the turn and the opponent isn't told.
+  // The player can keep hitting to bluff, and the bust is revealed when the hand resolves.
+  if (hand.length >= MAX_HAND_CARDS) return;
 
   ensureDeck(room, 2);
   hand.push(room.deck.pop());
 
   io.to(oppId).emit("cue", { text: "Opponent HIT." });
-
-  if (handScore(hand) > 21) {
-    room.finished[socketId][handKey] = true;
-    io.to(oppId).emit("cue", { text: "Opponent busted." });
-    if (bothFinishedCurrent(room, handKey)) advance(room, handKey);
-  }
   broadcast(room);
 }
 
@@ -1035,6 +1036,7 @@ function advance(room, completedKey) {
 
       room.tiePending = true;
       room.tieMsg = msg;
+      room.handOutcomes.A = "tie"; // reveals both hands so the draw can be shown
       broadcast(room);
       return;
     }
@@ -1060,11 +1062,12 @@ function advance(room, completedKey) {
   }
 
   broadcast(room); // show result before advancing
+  // Hold the resolved hand on screen long enough for the client's reveal animation.
   setTimeout(() => {
     if (!rooms.has(room.id)) return;
     if (!ensureActiveHand(room)) return;
     broadcast(room);
-  }, 2000);
+  }, REVEAL_HOLD_MS);
 }
 
 /* ---------- Run ---------- */
