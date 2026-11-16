@@ -145,6 +145,13 @@ function createRoom(p1, p2) {
 /* ---------- Sanitize & broadcast ---------- */
 function getHandsObj(room) { return room.mode === "sudden" ? room.sdHands : room.hands; }
 
+// Returns the player's hand for handKey, or null if the key doesn't name one of their hands.
+function playerHand(room, pid, handKey) {
+  const hands = getHandsObj(room)[pid];
+  if (typeof handKey !== "string" || !hands || !Object.prototype.hasOwnProperty.call(hands, handKey)) return null;
+  return hands[handKey];
+}
+
 function sanitizeFor(room, pid) {
   const opp = other(room, pid);
   const packHands = getHandsObj(room);
@@ -502,6 +509,34 @@ function startSuddenDeath(room) {
   room.handOutcomes = { A: null, B: null, C: null };
   room.tiePending = false;
   room.tieMsg = null;
+  room.nextSuddenReady = { [p1]: false, [p2]: false };
+  // Main-round Doubles and Naturals don't carry into Sudden Death.
+  room.doubled[p1] = { A: false, B: false, C: false };
+  room.doubled[p2] = { A: false, B: false, C: false };
+  room.natural[p1] = { A: false, B: false, C: false };
+  room.natural[p2] = { A: false, B: false, C: false };
+
+  // A Natural dealt in Sudden Death wins outright; two Naturals are a draw and the hand is replayed.
+  const n1 = isNatural(room.sdHands[p1].A);
+  const n2 = isNatural(room.sdHands[p2].A);
+  if (n1 || n2) {
+    for (const [pid, natural] of [[p1, n1], [p2, n2]]) {
+      room.natural[pid].A = natural;
+      room.locked[pid].A = true;
+      room.finished[pid].A = true;
+      if (natural) {
+        io.to(pid).emit("cue", { text: "Sudden Death: Natural Blackjack!" });
+        io.to(other(room, pid)).emit("cue", { text: "Opponent revealed a Natural Blackjack." });
+      }
+    }
+    room.stage = "play";
+    broadcast(room);
+    room.timers.transition = setTimeout(() => {
+      room.timers.transition = null;
+      if (rooms.has(room.id)) advance(room, "A");
+    }, 2000);
+    return;
+  }
 
   broadcast(room);
   startStrategyTimer(room);
@@ -702,9 +737,18 @@ io.on("connection", (socket) => {
 
     if (room.redrawUsed[socket.id]) return;
 
+    // Only a real card in one of this player's own hands can be redrawn.
+    const hand = playerHand(room, socket.id, handKey);
+    if (!hand || !Number.isInteger(cardIndex) || cardIndex < 0 || cardIndex >= hand.length) return;
+    // A Doubled hand, or a Natural that has already been scored, is locked.
+    if (room.locked[socket.id][handKey] || room.doubled[socket.id][handKey]) {
+      socket.emit("cue", { text: `Hand ${handKey} is locked and can't be redrawn.` });
+      return;
+    }
+
     ensureDeck(room, 5);
     const newCard = room.deck.pop();
-    getHandsObj(room)[socket.id][handKey].splice(cardIndex, 1, newCard);
+    hand.splice(cardIndex, 1, newCard);
 
     room.redrawUsed[socket.id] = true;
     room.redrawTarget[socket.id] = { handKey, cardIndex };
@@ -719,9 +763,17 @@ io.on("connection", (socket) => {
     if (room.stage !== "strategy" || room.ready[socket.id]) return;
 
     if (!room.doubleAvailable[socket.id]) return;
+    if (room.mode !== "normal" || !HAND_ORDER.includes(handKey)) return;
+    // A Natural is already a win, and a Redrawn hand can't also be Doubled.
+    if (room.natural[socket.id][handKey] || room.locked[socket.id][handKey] ||
+        room.redrawTarget[socket.id]?.handKey === handKey) {
+      socket.emit("cue", { text: `Hand ${handKey} can't be doubled.` });
+      return;
+    }
 
     room.doubleAvailable[socket.id] = false;
     room.doubled[socket.id][handKey] = true;
+    room.locked[socket.id][handKey] = true;
     room.doubleTarget[socket.id] = handKey;
 
     io.to(other(room, socket.id)).emit("cue", { text: `Opponent doubled Hand ${handKey}.` });
@@ -794,6 +846,20 @@ io.on("connection", (socket) => {
 
     if (bothFinishedCurrent(room, handKey)) advance(room, handKey);
     broadcast(room);
+  });
+
+  socket.on("next_sudden_round", ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.players.includes(socket.id)) return;
+    if (room.mode !== "sudden" || !room.tiePending) return;
+
+    room.nextSuddenReady[socket.id] = true;
+    const opp = other(room, socket.id);
+    if (room.nextSuddenReady[opp] || opp.startsWith("BOT_")) {
+      startSuddenDeath(room);
+    } else {
+      io.to(opp).emit("cue", { text: "Opponent is ready for the next Sudden Death hand." });
+    }
   });
 
   socket.on("disconnect", () => {
@@ -912,11 +978,7 @@ function startBotLoop(room, botId) {
         if (Math.random() > 0.1) return;
         const hand = room.sdHands[botId][k];
         if (handScore(hand) < 17) {
-          // Hit
-          ensureDeck(room, 2);
-          hand.push(room.deck.pop());
-          // notify, check bust... similar logic to main play
-          // simplified for brevity:
+          // Hit (socket_emit_hit_logic draws the card)
           socket_emit_hit_logic(room, botId, k);
         } else {
           room.finished[botId][k] = true;

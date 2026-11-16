@@ -5,9 +5,10 @@
 // deals are repeatable, and timers run 20x faster.
 //
 // Test names start with the requirement they cover (docs/user-stories.md and
-// docs/game-design.md). Tests marked { todo: 'DUEL-...' } describe what the
-// spec asks for and currently fail; they run every time but don't fail the
-// build. See TESTING.md for the findings.
+// docs/game-design.md). DUEL-... tests began as known bugs and now guard the
+// fix; DECISION-... tests pin a rule that was decided after testing. Tests
+// marked { todo: 'DUEL-...' } describe what the spec asks for and currently
+// fail; they run every time but don't fail the build. See TESTING.md.
 
 import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,6 +27,7 @@ const SEED = {
   tieAfterThree: 1,         // standing on every hand ends level, so Sudden Death follows
   tieWithDoubleOnA: 57,     // still level after player one Doubles Hand A
   bothNaturalsOnAThenTie: 52, // both players are dealt a Natural on Hand A, and the match still ends level
+  p1NaturalInSuddenDeath: 97, // the match ends level and player one is dealt a Natural in Sudden Death
   scoringRuns: [2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 15, 16] // varied results, no Naturals
 };
 
@@ -126,7 +128,7 @@ describe('Server authority and fair play', () => {
     assert.ok(await staysQuiet(match.p1, 'state', (s) => s.myHands.A.length > 2));
   });
 
-  test('DUEL-001 / US-4.1: a Redraw aimed at a card that does not exist is refused', { ...T, todo: 'DUEL-001' }, async () => {
+  test('DUEL-001 / US-4.1: a Redraw aimed at a card that does not exist is refused', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -135,7 +137,7 @@ describe('Server authority and fair play', () => {
     assert.equal(match.p1.state.myHands.A.length, 2, 'Hand A grew to three cards: the client added a card');
   });
 
-  test('DUEL-002 / US-4.1: a malformed Redraw does not take the server down', { ...T, todo: 'DUEL-002' }, async () => {
+  test('DUEL-002 / US-4.1: a malformed Redraw does not take the server down', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -186,7 +188,7 @@ describe('Strategy Phase', () => {
     assert.match((await cue).text, /Hand B/);
   });
 
-  test('DUEL-003 / US-1.3: Redraw is refused on a hand that has been Doubled', { ...T, todo: 'DUEL-003' }, async () => {
+  test('DUEL-003 / US-1.3: Redraw is refused on a hand that has been Doubled', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -199,7 +201,7 @@ describe('Strategy Phase', () => {
     assert.equal(JSON.stringify(match.p1.state.myHands.A), before, 'the Doubled hand was Redrawn');
   });
 
-  test('DUEL-014 / GDD-Double: Double is refused on a hand that has been Redrawn', { ...T, todo: 'DUEL-014' }, async () => {
+  test('DUEL-014 / GDD-Double: Double is refused on a hand that has been Redrawn', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -211,12 +213,12 @@ describe('Strategy Phase', () => {
     assert.equal(match.p1.state.doubleAvailable, true, 'the Redrawn hand was Doubled');
   });
 
-  test('DUEL-004 / US-1.3: the Strategy Phase timer is 30 seconds', { ...T, todo: 'DUEL-004' }, async () => {
+  test('DECISION-1 / US-1.3: the Strategy Phase timer is 20 seconds', T, async () => {
     server = await startServer({ seed: SEED.plain });
     const match = await startMatch(server);
     const timer = waitFor(match.p1, 'redraw_timer');
     await toStrategy(match);
-    assert.equal((await timer).total, 30);
+    assert.equal((await timer).total, 20);
   });
 });
 
@@ -277,7 +279,7 @@ describe('Scoring', () => {
     assert.equal(final.perHand.A, 'p1');
   });
 
-  test('DUEL-005 / GDD-Natural: a Natural cannot be Doubled, so the Double stays available', { ...T, todo: 'DUEL-005' }, async () => {
+  test('DUEL-005 / GDD-Natural: a Natural cannot be Doubled, so the Double stays available', T, async () => {
     server = await startServer({ seed: SEED.p1NaturalOnA });
     const match = await startMatch(server);
     await toStrategy(match);
@@ -339,7 +341,7 @@ describe('Sudden Death', () => {
     assert.equal(match.p2.state.doubleAvailable, false);
   });
 
-  test('DUEL-012 / US-1.5d: a Double from the main round does not carry into Sudden Death', { ...T, todo: 'DUEL-012' }, async () => {
+  test('DUEL-012 / US-1.5d: a Double from the main round does not carry into Sudden Death', T, async () => {
     const match = await reachSuddenDeath({
       seed: SEED.tieWithDoubleOnA,
       beforePlay: async (m) => {
@@ -353,22 +355,37 @@ describe('Sudden Death', () => {
     assert.equal(match.p1.state.myFinished.A, false, 'the Sudden Death hand was locked before it was played');
   });
 
-  test('DUEL-013 / US-4.1: the opponent\'s Sudden Death hand stays hidden, even after a Natural in the main round', { ...T, todo: 'DUEL-013' }, async () => {
+  test('DUEL-013 / US-4.1: the opponent\'s Sudden Death hand stays hidden, even after a Natural in the main round', T, async () => {
     const match = await reachSuddenDeath({ seed: SEED.bothNaturalsOnAThenTie });
     for (const p of [match.p1, match.p2]) {
       assert.ok(p.state.oppHands.A.every((c) => c.r === '?'), 'the opponent\'s Sudden Death cards were sent face up');
     }
   });
 
-  test('DUEL-007 / US-1.5d: Redraw is disabled in Sudden Death', { ...T, todo: 'DUEL-007' }, async () => {
-    const match = await reachSuddenDeath();
-    const before = JSON.stringify(match.p1.state.myHands.A);
-    match.p1.emit('redraw_card', { roomId: match.roomId, handKey: 'A', cardIndex: 0 });
-    await staysQuiet(match.p1, 'state', () => true, 400);
-    assert.equal(JSON.stringify(match.p1.state.myHands.A), before, 'a card was Redrawn in Sudden Death');
+  test('DECISION-3 / GDD-Natural: a Natural dealt in Sudden Death wins the match outright', T, async () => {
+    server = await startServer({ seed: SEED.p1NaturalInSuddenDeath });
+    const match = await startMatch(server);
+    await toStrategy(match);
+    await toPlay(match);
+    autoStand(match.p1, match.roomId);
+    autoStand(match.p2, match.roomId);
+    const final = await waitFor(match.p1, 'final', () => true, { timeout: 15_000 });
+    assert.equal(final.bySuddenDeath, true);
+    assert.ok(isNatural(final.yourHands.A), 'player one held the Natural');
+    assert.equal(final.yourHands.A.length, 2, 'the Natural was never played');
+    assert.equal(final.result, 'win');
   });
 
-  test('DUEL-008 / GDD-Sudden Death: a tied Sudden Death hand is replayed until there is a winner', { ...T, todo: 'DUEL-008' }, async () => {
+  test('DECISION-2 / US-1.5d: Redraw stays available in Sudden Death, so it is not a coin flip', T, async () => {
+    const match = await reachSuddenDeath();
+    const before = match.p1.state.myHands.A.map((c) => c.r + c.s);
+    match.p1.emit('redraw_card', { roomId: match.roomId, handKey: 'A', cardIndex: 0 });
+    const after = await waitFor(match.p1, 'state', (s) => s.redrawUsed);
+    assert.notEqual(after.myHands.A[0].r + after.myHands.A[0].s, before[0], 'the first card was replaced');
+    assert.equal(after.myHands.A[1].r + after.myHands.A[1].s, before[1], 'the second card was kept');
+  });
+
+  test('DUEL-008 / GDD-Sudden Death: a tied Sudden Death hand is replayed until there is a winner', T, async () => {
     const match = await reachSuddenDeath();
     await toPlay(match);
     // Both players bust, which ties the hand.
