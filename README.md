@@ -51,7 +51,8 @@ The code is the smallest part of this. The design and discovery docs show how I'
 | [Game design](docs/game-design.md) | Concept, audience, experience pillars, full ruleset, a four-phase roadmap and wireframes |
 | [MVP user stories](docs/user-stories.md) | Stories and acceptance criteria for the Phase 1 build, including timers, disconnections and server authority |
 | [Validation plan](docs/validation-plan.md) | Three testable hypotheses, the data queries that would test them, and a targeted player survey mapped to each one |
-| [Test strategy and findings](king-of-the-hill/TESTING.md) | A risk-based test suite traced to the spec, and the four bugs it found, including one that stops the tournament |
+| [Duel test findings](duel/TESTING.md) | Server tests that play real matches with two clients, check every score against an independent implementation of the rules, and found ten gaps, including one that lets a player crash the server |
+| [King of the Hill test findings](king-of-the-hill/TESTING.md) | A risk-based test suite traced to the spec, and the four bugs it found, including one that stops the tournament |
 
 ## What I haven't proven yet
 
@@ -65,7 +66,7 @@ So there are two next steps, in this order: build the hidden bust so the core id
 
 ```
 first-prototype/   the original single-file proof of concept (July 2025)
-duel/              1v1 multiplayer prototype (Node.js, Socket.IO)
+duel/              1v1 multiplayer prototype (Node.js, Socket.IO), with integration tests
 android/           native Android exploration (Kotlin, Jetpack Compose)
 king-of-the-hill/  tournament prototype (Node.js), with unit and end-to-end tests
 docs/              game design, user stories, validation plan, wireframes
