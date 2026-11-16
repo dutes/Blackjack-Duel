@@ -2,7 +2,7 @@
 
 The MVP of Blackjack Duel: two players head-to-head over the network.
 
-To try it on your own machine, run it as below and open it in two browser tabs to play against yourself.
+**▶ Play it live:** https://blackjack-duel.onrender.com (open it in two browser tabs to play against yourself, or try the tutorial against the bot). It runs on a free server that sleeps when idle, so the first visit can take about a minute.
 
 ## What's in it
 
