@@ -1,0 +1,25 @@
+{
+  "name": "bj_koth",
+  "version": "1.0.0",
+  "description": "Tournament-style blackjack proof of concept",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"tests/unit/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "keywords": [
+    "blackjack",
+    "tournament"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

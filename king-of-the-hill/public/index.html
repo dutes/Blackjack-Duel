@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blackjack King of the Hill</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div id="overlay" class="overlay hidden">
+    <div class="overlay-content">
+      <h1>Blackjack Duel</h1>
+      <div id="overlayMessage" class="overlay-message"></div>
+      <button id="startButton" class="primary">Start Game</button>
+    </div>
+  </div>
+
+  <main class="app">
+    <header class="app-header">
+      <h1>Blackjack Duel</h1>
+      <div id="levelIndicator" class="level-indicator hidden">Round 1 • 8 players left</div>
+    </header>
+
+    <section class="table">
+      <div class="participant opponent">
+        <div class="participant-header">
+          <div class="participant-summary">
+            <h2 id="opponentName">Opponent</h2>
+            <span class="total hidden" id="opponentTotalLabel">Total: <span id="opponentTotal">?</span></span>
+          </div>
+          <div id="opponentScoreboard" class="hand-scoreboard" aria-label="Opponent hand results"></div>
+        </div>
+        <div id="opponentCards" class="cards"></div>
+        <div id="opponentIndicator" class="opponent-indicator hidden" aria-live="polite">
+          <span class="opponent-indicator__dot"></span>
+          <span>Opponent playing…</span>
+        </div>
+        <div id="opponentStatus" class="status">Waiting…</div>
+      </div>
+
+      <div id="handIndicator" class="hand-indicator">Hand 1 of 3</div>
+
+      <div class="participant player">
+        <div class="participant-header">
+          <div class="participant-summary">
+            <h2>You</h2>
+            <span class="total">Total: <span id="playerTotal">0</span></span>
+          </div>
+          <div id="playerScoreboard" class="hand-scoreboard" aria-label="Your hand results"></div>
+        </div>
+        <div id="playerCards" class="cards"></div>
+        <div class="controls">
+          <button id="hitButton" class="primary" disabled>Hit</button>
+          <button id="standButton" class="secondary" disabled>Stand</button>
+          <button id="doubleButton" class="secondary" disabled>Double</button>
+        </div>
+        <div id="playerStatus" class="status">Awaiting deal…</div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <div id="tournamentStatus">Prepare for battle!</div>
+    </footer>
+  </main>
+
+  <aside id="debugPanel" class="debug-panel hidden">
+    <div class="debug-panel__header">Debug Logs</div>
+    <div id="debugLogs" class="debug-panel__content"></div>
+  </aside>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+
+</html>
