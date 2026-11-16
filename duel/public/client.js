@@ -77,6 +77,30 @@ function faceHTML(c, extra = "") {
     `<span class="corner"><b>${esc(c.r)}</b><i>${SUITS[c.s] || ""}</i></span>` +
     `<span class="pip">${SUITS[c.s] || ""}</span></span>`;
 }
+// Sudden Death sign: a saloon board hanging on two chains, with the ace of spades (the "death card").
+const SD_LOGO = `<svg class="sd-logo" viewBox="0 0 280 170" role="img" aria-label="Sudden Death">
+  <defs>
+    <linearGradient id="sdWood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A3320"/><stop offset=".5" stop-color="#43251A"/><stop offset="1" stop-color="#2C170E"/></linearGradient>
+    <linearGradient id="sdGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF1C2"/><stop offset=".55" stop-color="#E3C77A"/><stop offset="1" stop-color="#A9803A"/></linearGradient>
+  </defs>
+  <g class="sd-swing">
+    <path d="M70 4 L58 42 M210 4 L222 42" stroke="#C9A452" stroke-width="2.5" stroke-dasharray="5 3" fill="none"/>
+    <circle cx="70" cy="4" r="3.5" fill="#C9A452"/><circle cx="210" cy="4" r="3.5" fill="#C9A452"/>
+    <path d="M22 50 Q22 42 30 42 L250 42 Q258 42 258 50 L262 128 Q262 136 254 136 L26 136 Q18 136 18 128 Z" fill="url(#sdWood)" stroke="#C9A452" stroke-width="2.5"/>
+    <path d="M30 70 H250 M28 104 H252" stroke="#2A160C" stroke-width="1.2" opacity=".55"/>
+    <circle cx="32" cy="53" r="2.6" fill="#C9A452"/><circle cx="248" cy="53" r="2.6" fill="#C9A452"/>
+    <circle cx="31" cy="125" r="2.6" fill="#C9A452"/><circle cx="249" cy="125" r="2.6" fill="#C9A452"/>
+    <text x="140" y="80" text-anchor="middle" font-family="Rye, 'Playfair Display', serif" font-size="27" letter-spacing="5" fill="url(#sdGold)">SUDDEN</text>
+    <text x="140" y="123" text-anchor="middle" font-family="Rye, 'Playfair Display', serif" font-size="40" letter-spacing="4" fill="#F4EFE2" stroke="#7A1824" stroke-width="1.2" paint-order="stroke">DEATH</text>
+    <text x="40" y="78" text-anchor="middle" font-size="13" fill="#E3C77A">★</text>
+    <text x="240" y="78" text-anchor="middle" font-size="13" fill="#E3C77A">★</text>
+  </g>
+  <g class="sd-card" transform="translate(140 36) rotate(-8)">
+    <rect x="-13" y="-18" width="26" height="36" rx="3.5" fill="#FBF8F1" stroke="#C9A452" stroke-width="1.5"/>
+    <text x="0" y="8" text-anchor="middle" font-size="22" fill="#15130F">♠</text>
+  </g>
+  <text x="140" y="160" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" font-weight="700" letter-spacing="3.2" fill="#FFF1C2" opacity=".8">LAST HAND · WINNER TAKES ALL</text>
+</svg>`;
 const BACK = '<span class="card back" aria-hidden="true"></span>';
 
 /* ---------- Toasts ---------- */
@@ -231,7 +255,7 @@ function renderLane(k) {
   oppTotalEl.classList.toggle("pop", !!rv);
 
   // Middle label
-  setHTML(lane.querySelector(".key"), sudden ? "SD" : k);
+  setHTML(lane.querySelector(".key"), sudden ? SD_LOGO : k);
   let tag = "";
   if (S.myNatural?.[k] || S.oppNatural?.[k]) tag = "BLACKJACK";
   else if (S.stage === "strategy" && S.myDoubled?.[k]) tag = "DOUBLED";
@@ -445,6 +469,7 @@ function renderControls() {
 function render() {
   renderHeader();
   if (!S) return;
+  document.body.classList.toggle("sudden", S.mode === "sudden");
   buildLanes(laneKeys());
   laneKeys().forEach(renderLane);
   renderOverlay();
