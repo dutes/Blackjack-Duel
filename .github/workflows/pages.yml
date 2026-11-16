@@ -1,0 +1,49 @@
+name: Publish demos
+
+# Publishes the browser-only demos to GitHub Pages:
+#   /                  a short landing page
+#   /king-of-the-hill/ the tournament prototype
+#   /first-prototype/  the original single-file version
+# The 1v1 duel needs a Node server, so it's deployed to Render instead (see render.yaml).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'king-of-the-hill/public/**'
+      - 'first-prototype/**'
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/king-of-the-hill _site/first-prototype
+          cp site/index.html _site/
+          cp -r king-of-the-hill/public/. _site/king-of-the-hill/
+          cp first-prototype/index.html _site/first-prototype/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

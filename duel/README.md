@@ -2,7 +2,7 @@
 
 The MVP of Blackjack Duel: two players head-to-head over the network.
 
-**Play it live:** https://bjd-mp.onrender.com/ (open it in two browser tabs to play against yourself)
+To try it on your own machine, run it as below and open it in two browser tabs to play against yourself.
 
 ## What's in it
 
@@ -19,6 +19,10 @@ The **hidden bust**. When a player busts, the server ends their turn and tells t
 ## Testing
 
 `npm test` plays real matches against the server with two Socket.IO clients and checks them against the user stories. What it covers and what it found are in [TESTING.md](TESTING.md).
+
+## Hosting
+
+[`render.yaml`](../render.yaml) at the root of the repo deploys this folder to Render's free tier. A free instance sleeps after 15 minutes without traffic and takes about a minute to wake on the next visit.
 
 ## Running it
 

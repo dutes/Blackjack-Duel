@@ -1,5 +1,7 @@
 # Blackjack King of the Hill
 
+**▶ Play it live:** https://dutes.github.io/Blackjack-Duel/king-of-the-hill/
+
 A lightweight Node.js proof of concept for a knockout-style blackjack experience. Players enter a mini-tournament, wait for opponents to be paired, and face off head-to-head using the [Deck of Cards API](https://deckofcardsapi.com/). Win each duel to advance through the bracket until you are crowned champion.
 
 ## Features

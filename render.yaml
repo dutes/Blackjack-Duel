@@ -1,0 +1,15 @@
+# Render Blueprint for the 1v1 duel (https://render.com/docs/blueprint-spec).
+# Free instances sleep after 15 minutes without traffic and take about a minute to wake.
+services:
+  - type: web
+    name: blackjack-duel
+    runtime: node
+    plan: free
+    rootDir: duel
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

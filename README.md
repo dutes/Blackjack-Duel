@@ -4,10 +4,11 @@
 
 ![Blackjack Duel gameplay](docs/media/demo.gif)
 
-**▶ Play the 1v1 duel:** https://bjd-mp.onrender.com/ (open it in two tabs to play yourself)
-**▶ Play King of the Hill:** https://bj-koth.onrender.com/
+**▶ Play King of the Hill:** https://dutes.github.io/Blackjack-Duel/king-of-the-hill/
 
-*Both run on a free tier, so give them a moment to wake up.*
+**▶ Play the first prototype:** https://dutes.github.io/Blackjack-Duel/first-prototype/
+
+The 1v1 duel needs a live server; see [duel/](duel/) to run it.
 
 ## Why I built it
 
