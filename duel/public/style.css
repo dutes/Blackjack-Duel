@@ -146,13 +146,16 @@ button { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 6px 16px;
+  padding: 22px 6px 16px;
   border-radius: 26px;
   transition: box-shadow .4s, background .4s, opacity .4s;
 }
 .lane.is-active { background: rgba(0,0,0,.18); box-shadow: 0 0 0 2px var(--gold), 0 0 30px rgba(227,199,122,.35); }
 .lane.rv:not(.rv-settled) { background: rgba(0,0,0,.2); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(227,199,122,.35); }
 .lane.is-future { opacity: .6; }
+/* The outer lanes follow the curve of the oval table, so their highlight never crosses the rail. */
+.lanes:not(.single) .lane:first-child { border-radius: min(150px, 46%) 26px 26px min(150px, 46%) / 50% 26px 26px 50%; }
+.lanes:not(.single) .lane:last-child { border-radius: 26px min(150px, 46%) min(150px, 46%) 26px / 26px 50% 50% 26px; }
 
 .group {
   --cw: 54px; --ch: 76px;
@@ -433,7 +436,7 @@ body.sudden .lane.is-active { background: rgba(0,0,0,.16); }
   .felt { flex: 1; min-height: 0; border-radius: 33px; padding: 14px 6px 12px; box-shadow: inset 0 0 0 2px var(--trim), inset 0 0 50px rgba(0,0,0,.45); }
   .lanes { gap: 6px; }
   .lanes.single { grid-template-columns: minmax(0, 1fr); padding: 0 20px; }
-  .lane { padding: 6px 0 10px; border-radius: 24px; background: rgba(0,0,0,.12); }
+  .lane, .lanes:not(.single) .lane:first-child, .lanes:not(.single) .lane:last-child { padding: 6px 0 10px; border-radius: 24px; background: rgba(0,0,0,.12); }
   .lane.is-active, .lane.rv:not(.rv-settled) { background: rgba(0,0,0,.2); }
 
   .group { --cw: 40px; --ch: 58px; gap: 6px; }
