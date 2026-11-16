@@ -28,17 +28,19 @@ Each player gets **three private hands**, A, B and C. Before anything is played,
 
 Then you play the hands one at a time against your opponent. Best total wins the hand, and most points after three hands wins the round. A tie goes to Sudden Death.
 
-The twist is the **hidden bust**. Go over 21 and your opponent isn't told. Your turn doesn't end, and you can keep hitting to make it look like you're chasing a big hand. Nobody knows until the reveal. That one rule turns a solved game into a game of nerve.
+The twist in the design is the **hidden bust**. Go over 21 and your opponent isn't told. Your turn doesn't end, and you can keep hitting to make it look like you're chasing a big hand. Nobody knows until the reveal. That one rule turns a solved game into a game of nerve.
 
 The full ruleset is in [docs/game-design.md](docs/game-design.md).
 
-## Two prototypes, two questions
+## What I built, and what each build tests
 
-It started in July 2025 as a single HTML file: three hands and a Redraw against an AI that hits until 17, with a log of every move down the side. That's kept in [first-prototype/](first-prototype/) as the starting point. The two demos below are what it grew into.
+It started in July 2025 as a single HTML file: three hands and a Redraw against an AI that hits until 17, with a log of every move down the side. That's kept in [first-prototype/](first-prototype/) as the starting point. Here's what it grew into.
 
-**1v1 Duel: is the core loop fun?** This is the MVP: two real players, three hands, with Redraw, Double and the hidden bust all playable.
+**1v1 Duel: is the core loop fun?** This is the MVP: two real players over the network, three hands, a timed Strategy Phase with Redraw and Double, and Sudden Death on a tie. The server shuffles, deals and scores everything, and each player only ever sees their own cards. There's also a guided tutorial against a bot.
 
 **King of the Hill: does it scale into something people come back to?** An 8-player knockout tournament on the same duel loop. You work through the bracket against bot opponents, each with its own personality and strategy: Risky Rick hits until 18, Steely Stella until 17, and The Shark stands from 16. It's my test of the Phase 2 idea: whether the duel can become a sit-and-go "sport" that drives repeat play.
+
+**Android: could it be a native game?** An early exploration in Kotlin and Jetpack Compose, with the rules in their own tested layer. It plays on one device and has no networked opponent yet.
 
 ## The product work
 
@@ -53,15 +55,18 @@ The code is the smallest part of this. The design and discovery docs show how I'
 
 ## What I haven't proven yet
 
-The prototypes prove the game works on screen. They don't prove there's a market. I haven't run the validation plan, because it needs an operator's player data to answer the questions that matter: whether heavy Blackjack players already cross over into poker, and whether they bounce out of Blackjack sessions early.
+The prototypes prove the game works on screen. They don't yet include the **hidden bust**, the mechanic the whole design leans on: in both demos, a bust is shown straight away. That's the next thing to build, because until it's in front of players I can't say whether the bluffing works.
 
-That's the next step I'd take before building anything bigger. Rather than more features, I'd want evidence that the audience exists.
+They also don't prove there's a market. I haven't run the validation plan, because it needs an operator's player data to answer the questions that matter: whether heavy Blackjack players already cross over into poker, and whether they bounce out of Blackjack sessions early.
+
+So there are two next steps, in this order: build the hidden bust so the core idea can be playtested properly, then find the evidence that the audience exists. I wouldn't build anything bigger before both.
 
 ## Repository layout
 
 ```
 first-prototype/   the original single-file proof of concept (July 2025)
-duel/              1v1 multiplayer prototype (Node.js), being added
+duel/              1v1 multiplayer prototype (Node.js, Socket.IO)
+android/           native Android exploration (Kotlin, Jetpack Compose)
 king-of-the-hill/  tournament prototype (Node.js), with unit and end-to-end tests
 docs/              game design, user stories, validation plan, wireframes
 ```
