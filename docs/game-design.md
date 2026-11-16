@@ -40,9 +40,9 @@ A head-to-head PvP game built on familiar Blackjack rules: a tense, fast three-h
 | **Push** | Both totals are equal. No points. |
 | **Loss** | Your total is lower, or you bust and your opponent doesn't. |
 | **Natural Blackjack** | 21 dealt in the Deal Phase (Ace + a ten-value card) is an automatic win. It's revealed to the opponent, scores 1 point, can't be Doubled, and is skipped in the Play Phase. If both players have one, it's a Push. |
-| **Double** | Once per round, in the Strategy Phase. Makes one hand worth 2 points. The hand takes one more card and is then locked: no hits, no Redraw. |
+| **Double** | Once per round, in the Strategy Phase. Makes one hand worth 2 points. The hand takes one more card and is then locked: no hits, no Redraw. Can't be used on a Natural or on a hand that has been Redrawn. |
 | **Redraw** | Once per round, in the Strategy Phase. Discard one card from one hand and draw a replacement. Can't be used on a Doubled hand. |
-| **Sudden Death** | If the round is tied, one new hand is dealt with no Redraw or Double. Whoever wins it wins the round. |
+| **Sudden Death** | If the round is tied, each player is dealt one new hand. Double isn't available, but Redraw is, so Sudden Death stays a test of skill rather than a coin flip. A Natural wins it outright. If the hand is tied, including two Naturals or two busts, a new Sudden Death hand is dealt, until there's a winner. |
 | **Hidden Bust** | When your hand goes over 21, your opponent isn't told and your turn doesn't end. You can keep hitting, as a bluff, until you choose to stand. Your bust is only revealed at the end of the hand. |
 
 ## Roadmap

@@ -29,9 +29,10 @@ These are the stories and acceptance criteria I wrote to scope the Phase 1 MVP (
 ### 1.3 Strategy phase
 
 **As a player, I want a timed Strategy Phase to use my Redraw and Double before play begins, so I can plan my round.**
-- Show a shared 30-second Strategy Phase timer.
+- Show a shared 20-second Strategy Phase timer.
 - Allow one use each of Double and Redraw per round.
-- Prevent Redraw on a hand that's already Doubled.
+- Prevent Redraw on a hand that's already Doubled, and Double on a hand that's been Redrawn.
+- Prevent Double on a Natural Blackjack, which has already won.
 - Validate and lock Doubled hands on the server.
 - Flag any Natural Blackjack as an automatic 1-point win.
 
@@ -63,7 +64,9 @@ These are the stories and acceptance criteria I wrote to scope the Phase 1 MVP (
 
 **d) As a player, when a round ends in a draw, I want a Sudden Death hand to decide the winner.**
 - Show "Entering Sudden Death" with a 5-second countdown.
-- Deal one new hand with Redraw and Double disabled.
+- Deal one new hand to each player, with a 10-second Strategy Phase. Double is disabled; Redraw stays available.
+- A Natural dealt in Sudden Death wins outright.
+- If the hand is tied, including two Naturals or two busts, deal a new Sudden Death hand.
 - Show a visible Stand button.
 - Apply a 60-second timer; when it runs out, both players auto-stand.
 - Declare the winner and return to the lobby flow.
@@ -71,7 +74,7 @@ These are the stories and acceptance criteria I wrote to scope the Phase 1 MVP (
 ### 1.6 Timer behaviour (global rules)
 
 **As a player, I want timers to behave consistently across phases so I always understand how the game moves on.**
-- Strategy Phase: one shared 30-second timer.
+- Strategy Phase: one shared 20-second timer, or 10 seconds in Sudden Death.
 - Play Phase: 30 seconds per hand.
 - Sudden Death: one shared 60-second timer.
 - When a timer runs out, the player stands or the phase moves on automatically.
@@ -107,3 +110,12 @@ These are the stories and acceptance criteria I wrote to scope the Phase 1 MVP (
 - On reconnection, the client requests and receives a full state sync.
 - Timers and game phase resynchronise automatically.
 - Both players see "Reconnected – resuming play".
+
+## Changes after testing (November 2026)
+
+Testing the 1v1 duel against these stories raised questions the stories hadn't answered. These are the decisions:
+
+- **Strategy Phase: 20 seconds**, not 30, matching the build and the on-screen instructions.
+- **Redraw stays available in Sudden Death.** Without it, Sudden Death is close to a coin flip. Double stays off.
+- **Naturals can't be Doubled**, in the main round or anywhere else. A Natural is already a win.
+- **A Natural in Sudden Death wins outright.** Two Naturals are a draw, and Sudden Death is replayed.

@@ -2,7 +2,7 @@
 
 The duel is the MVP, so I tested it against the MVP user stories, story by story. It's also a networked game where the server holds the cards, so I tested it the way a cheating client would approach it as well as a fair one.
 
-The suite found ten gaps between the stories and the build, and reading the code turned up one more. One lets any player crash the server, one lets a player give themselves an extra card, and one is the game's defining mechanic, which isn't there yet.
+Testing found fourteen issues. The worst let any player crash the server or give themselves an extra card; both are fixed. The most important one still open is the game's defining mechanic, the hidden bust, which isn't built yet.
 
 ## How the tests work
 
@@ -18,82 +18,58 @@ The suite found ten gaps between the stories and the build, and reading the code
 
 ## Results
 
-**16 passed, 10 known gaps.** The suite takes about 25 seconds.
+**30 tests: 27 pass, 3 open.** The suite takes about 30 seconds.
 
-Known gaps are written as `{ todo: 'DUEL-...' }` tests. Each describes what the story asks for, runs on every build and is reported as TODO, so the build stays green while the gap stays visible. I checked each one fails for the reason it states, not because of a timeout or a test mistake.
+Nine of the fourteen issues are fixed, two were settled as product decisions, and three are still open. A fixed bug keeps its test, so it can't quietly come back. An open one is written as a `{ todo: 'DUEL-...' }` test: it describes what the story asks for, runs on every build and is reported as TODO, so the build stays green while the gap stays visible. I checked each open test fails for the reason it states, not because of a timeout or a test mistake.
 
 ## What works
 
 - **Matchmaking:** the public queue pairs two players; private matches work by code; an unknown code gets a clear message.
-- **Server authority over what you see:** each player receives their own three hands and only masked cards for their opponent. The server deals all twelve cards from one deck, with no duplicates, and refuses a Hit during the Strategy Phase.
-- **Redraw and Double:** Redraw replaces exactly the chosen card and works once; Double works once, and the opponent is told which hand.
+- **Server authority:** each player receives their own three hands and only masked cards for their opponent. The server deals all twelve cards from one deck with no duplicates, refuses a Hit during the Strategy Phase, and now rejects requests for hands or cards that don't exist.
+- **Redraw and Double:** Redraw replaces exactly the chosen card and works once; Double works once, and the opponent is told which hand. They can't be combined on one hand, and a Natural can't be Doubled.
 - **Scoring:** correct on every hand across twelve matches, including Doubled hands (one extra card, 2 points) and Naturals (an automatic win, revealed to the opponent).
-- **Sudden Death:** a tie after three hands deals each player a fresh hand, with Double switched off.
+- **Sudden Death:** a tie after three hands deals each player a fresh hand with Double off and Redraw on. A Natural wins it outright, and a tied hand is replayed.
 - **Disconnections:** the remaining player is told straight away.
 
 ## Findings
 
 Severity is about the player: what breaks, and for whom.
 
-### DUEL-002 · Critical · Any player can crash the server
+### Fixed
 
-A Redraw request for a hand that doesn't exist, such as `{ handKey: 'Z' }`, throws an unhandled error and the Node process exits. Every match on the server ends. It takes one message from a modified client, or a bug in the real one.
-*Story:* US-4.1, server authority. *Fix:* validate `handKey` and `cardIndex` on every event, and stop one bad request from taking the process down.
+| ID | Severity | What was wrong | Fix |
+|---|---|---|---|
+| DUEL-002 | Critical | A Redraw request for a hand that doesn't exist, such as `{ handKey: 'Z' }`, crashed the server and ended every match on it. | The server checks the hand exists before touching it. |
+| DUEL-001 | High | A Redraw request with a card position past the end of the hand added a third card. A player could give themselves an extra card. | The server checks the card position is real. |
+| DUEL-008 | High | A tied Sudden Death hand froze the match: the page sent `next_sudden_round`, and the server had no handler for it. | The server deals a new Sudden Death hand once both players continue. |
+| DUEL-013 | High | If a player had a Natural on Hand A in the main round, their Sudden Death cards were sent to the opponent face up. | Naturals from the main round are cleared when Sudden Death starts. |
+| DUEL-012 | Medium | A Double from the main round carried into Sudden Death, so a player who had Doubled Hand A got their Sudden Death hand dealt one card and locked before they could play it. | Doubles are cleared when Sudden Death starts. |
+| DUEL-003 | Medium | Redraw worked on a Doubled hand, so a player could Double a hand and then improve it. | Doubled hands are locked. |
+| DUEL-014 | Medium | Double worked on a hand that had been Redrawn. The page blocked it, but the server didn't. | The server refuses it. |
+| DUEL-005 | Low | Doubling a Natural did nothing except use up the player's Double. | The server refuses it and the Double stays available. |
+| DUEL-011 | Medium | In Sudden Death the bot drew two cards every time it hit. Found by reading the code. | The bot draws through the same path as a player. |
 
-### DUEL-001 · High · A player can give themselves an extra card
+### Settled as decisions
 
-A Redraw request with a card position past the end of the hand, such as `{ cardIndex: 5 }`, adds a third card instead of replacing one. The server trusts the position it's sent.
-*Story:* US-4.1, server authority. *Fix:* the same validation as DUEL-002.
+| ID | Question | Decision |
+|---|---|---|
+| DUEL-004 | The stories said 30 seconds for the Strategy Phase; the build used 20. | **20 seconds**, as the build and the on-screen instructions already said. The stories are updated. |
+| DUEL-007 | The stories said Redraw is off in Sudden Death; the build allowed it. | **Redraw stays on**, so Sudden Death is a test of skill rather than a coin flip. Double stays off. |
 
-### DUEL-006 · High · The hidden bust isn't built
+Both are pinned by `DECISION-` tests, alongside a third: **a Natural dealt in Sudden Death wins outright**, and two Naturals are a draw that's replayed. The decisions are recorded in [the user stories](../docs/user-stories.md#changes-after-testing-november-2026) and [the ruleset](../docs/game-design.md#ruleset-phase-1).
 
-When a player busts, the server ends their turn and sends the opponent "Opponent busted." In the design, the bust stays secret and the player can keep hitting as a bluff until they stand. This is the mechanic that makes Blackjack Duel different, so I'd build it before anything else.
-*Story:* US-1.4, GDD hidden bust.
+### Still open
 
-### DUEL-008 · High · A tied Sudden Death hand stops the game
+**DUEL-006 · High · The hidden bust isn't built.** When a player busts, the server ends their turn and tells the opponent. In the design, the bust stays secret and the player can keep hitting as a bluff until they stand. This is the mechanic that makes Blackjack Duel different, so it's next. *Stories: US-1.4, GDD hidden bust.*
 
-If both players bust, or push, in Sudden Death, the page shows a tie and sends `next_sudden_round` when the players continue. The server has no handler for that event, so nothing happens and the match never finishes.
-*Story:* GDD Sudden Death. *Fix:* handle `next_sudden_round` by dealing a new Sudden Death hand.
+**DUEL-010 · High · A player can stall a match forever.** There's no timer on a hand in play, so a player who never hits or stands holds their opponent indefinitely. The story asks for a 30-second timer that auto-stands. *Stories: US-1.4, US-1.6.*
 
-### DUEL-010 · High · A player can stall a match forever
+**DUEL-009 · Medium · A dropped connection ends the match at once.** The story asks for a 30-second window to reconnect, then a win by forfeit. Whether the prototype needs it is still under discussion. *Stories: US-2.1, US-4.2.*
 
-There's no timer on a hand in play. A player who never hits or stands holds the match, and their opponent, indefinitely. The story asks for a 30-second timer that auto-stands.
-*Story:* US-1.4 and US-1.6.
+### Not tested automatically
 
-### DUEL-009 · Medium · A dropped connection ends the match at once
-
-When a player disconnects, the match is deleted immediately. The story asks for a 30-second window to reconnect, then a win by forfeit for the player who stayed. A brief Wi-Fi drop currently costs both players the match.
-*Story:* US-2.1 and US-4.2.
-
-### DUEL-003 · Medium · Redraw works on a Doubled hand
-
-The rules say Redraw can't be used on a Doubled hand. The server allows it, so a player can Double a hand and then improve it.
-*Story:* US-1.3.
-
-### DUEL-007 · Medium · Redraw works in Sudden Death
-
-The rules say Redraw and Double are both off in Sudden Death. Double is; Redraw isn't. The code comments say this is deliberate ("one redraw each allowed"), so the spec and the build disagree. That's a product decision, and it should be written down either way.
-*Story:* US-1.5d, GDD Sudden Death.
-
-### DUEL-005 · Low · Doubling a Natural wastes the Double
-
-A Natural is scored the moment it's dealt. The server still accepts a Double on it, which does nothing except use up the player's Double for the round. The rules say a Natural can't be Doubled, so the request should be refused and the Double kept.
-*Story:* GDD Natural Blackjack.
-
-### DUEL-004 · Low · The Strategy Phase is 20 seconds, not 30
-
-The stories specify 30 seconds for the Strategy Phase; the build uses 20, and 10 in Sudden Death. Again, a decision to write down rather than a defect.
-*Story:* US-1.3 and US-1.6.
-
-### DUEL-011 · Medium · Found in code review: the bot draws two cards per hit in Sudden Death
-
-In Sudden Death the bot draws a card, then calls the shared hit function, which draws another. It also hits below 16 in normal play but below 17 in Sudden Death. The bot's moves depend on timing, so this one has no automated test yet.
-
-## What I'd fix first
-
-1. **DUEL-001 and DUEL-002 together:** one input-validation change closes both, and they're the only findings that let a player cheat or take the game down for everyone.
-2. **DUEL-006, the hidden bust:** without it, the playtest can't answer the question the product depends on.
-3. **DUEL-008 and DUEL-010:** both leave a player stuck in a match that can't end.
+- **Two Naturals in Sudden Death.** The code follows the same path as any tied Sudden Death hand, which is tested, but no seed in the first 1,200 deals both players a Natural there.
+- **The bot's Sudden Death draw (DUEL-011).** The bot's moves depend on timing, so the fix was checked by reading the code.
 
 ## Not covered yet
 
