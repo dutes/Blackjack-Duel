@@ -77,6 +77,10 @@ docs/              game design, user stories, validation plan, wireframes
 
 Each prototype folder has its own README with setup steps.
 
+## Licence
+
+© 2025–2026 Brian Doutey. All rights reserved. The code and documents are published so they can be read and the demos played; they aren't licensed for reuse.
+
 ---
 
 Designed and built by **Brian Doutey**.
